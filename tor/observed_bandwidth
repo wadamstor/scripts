@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# This script queries the tor project's RESTful api for
+# a relay's observed bandwidth. The tor api measures observed
+# bandwidth rate in bytes per second rather than bits per second.
+# This script requires the command line utility jq for parsing json.
+
+# API REFERENCE: https://onionoo.torproject.org/protocol.html
+
+# USAGE:
+#   ./observed_bandwidth <relay_fingerprint>
+
+# EXAMPLE:
+#   I personally like to create a file in my home directory
+#   named 'fingerprint' that contains nothing but the fingerprint
+#   for my tor relay so I can do this:
+#
+#   ./observed_bandwidth $(cat ~/fingerprint)
+
+# Author: wadams <wadamstor@gmail.com>
+# Github: https://github.com/wadamstor
+
+if [ $# -eq 0 ]
+then
+  echo "USAGE:"
+  echo "  ./observed_bandwidth <relay_fingerprint>"
+  echo ""
+  exit 1
+fi
+
+function print_observed_bandwidth() {
+  local json=$(curl -s https://onionoo.torproject.org/details?fingerprint=$1)
+  local observed_bandwidth=$(echo $json | jq .relays[0].observed_bandwidth)
+  local bandwidth_in_megabytes=$(echo "scale=4;$observed_bandwidth/1000000" | bc)
+  echo "$bandwidth_in_megabytes MB/s"
+}
+
+print_observed_bandwidth $1
